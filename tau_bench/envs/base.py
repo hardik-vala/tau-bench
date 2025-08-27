@@ -52,6 +52,7 @@ class Env(object):
         user_strategy: Union[str, UserStrategy],
         user_model: str,
         user_provider: Optional[str] = None,
+        service_tier: str = "default",
         task_index: Optional[int] = None,
     ) -> None:
         super().__init__()
@@ -71,7 +72,10 @@ class Env(object):
         self.wiki = wiki
         self.rules = rules
         self.user = load_user(
-            user_strategy=user_strategy, model=user_model, provider=user_provider
+            user_strategy=user_strategy,
+            model=user_model,
+            provider=user_provider,
+            service_tier=service_tier,
         )
         self.actions: List[Action] = []
 

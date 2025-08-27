@@ -35,17 +35,26 @@ class HumanUserSimulationEnv(BaseUserSimulationEnv):
 
 
 class LLMUserSimulationEnv(BaseUserSimulationEnv):
-    def __init__(self, model: str, provider: str) -> None:
+    def __init__(self, model: str, provider: str, service_tier: str = "default") -> None:
         super().__init__()
         self.messages: List[Dict[str, Any]] = []
         self.model = model
         self.provider = provider
+        self.service_tier = service_tier
         self.total_cost = 0.0
         self.reset()
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
+        # GPT-5 models only support temperature=1
+        extra_kwargs = {}
+        if not self.model.startswith("gpt-5"):
+            extra_kwargs["temperature"] = 0.0
         res = completion(
-            model=self.model, custom_llm_provider=self.provider, messages=messages
+            model=self.model,
+            custom_llm_provider=self.provider,
+            messages=messages,
+            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
+            **extra_kwargs,
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
@@ -86,8 +95,8 @@ Rules:
 
 
 class ReactUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str) -> None:
-        super().__init__(model=model, provider=provider)
+    def __init__(self, model: str, provider: str, service_tier: str = "default") -> None:
+        super().__init__(model=model, provider=provider, service_tier=service_tier)
         self.reset()
 
     def build_system_prompt(self, instruction: Optional[str]) -> str:
@@ -115,8 +124,16 @@ User Response:
 <the user response (this will be parsed and sent to the agent)>"""
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
+        # GPT-5 models only support temperature=1
+        extra_kwargs = {}
+        if not self.model.startswith("gpt-5"):
+            extra_kwargs["temperature"] = 0.0
         res = completion(
-            model=self.model, custom_llm_provider=self.provider, messages=messages
+            model=self.model,
+            custom_llm_provider=self.provider,
+            messages=messages,
+            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
+            **extra_kwargs,
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
@@ -154,9 +171,10 @@ User Response:
 
 
 class VerifyUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str, max_attempts: int = 3) -> None:
+    def __init__(self, model: str, provider: str, max_attempts: int = 3, service_tier: str = "default") -> None:
         self.model = model
         self.provider = provider
+        self.service_tier = service_tier
         self.max_attempts = max_attempts
         self.reset()
 
@@ -164,8 +182,16 @@ class VerifyUserSimulationEnv(LLMUserSimulationEnv):
         attempts = 0
         cur_message = None
         while attempts < self.max_attempts:
+            # GPT-5 models only support temperature=1
+            extra_kwargs = {}
+            if not self.model.startswith("gpt-5"):
+                extra_kwargs["temperature"] = 0.0
             res = completion(
-                model=self.model, custom_llm_provider=self.provider, messages=messages
+                model=self.model,
+                custom_llm_provider=self.provider,
+                messages=messages,
+                extra_body={"service_tier": self.service_tier} if self.service_tier else None,
+                **extra_kwargs,
             )
             cur_message = res.choices[0].message
             self.total_cost = res._hidden_params["response_cost"]
@@ -204,7 +230,7 @@ def map_role_label(role: str) -> str:
 
 
 def verify(
-    model: str, provider: str, response: str, messages: List[Dict[str, Any]]
+    model: str, provider: str, response: str, messages: List[Dict[str, Any]], service_tier: str = "default"
 ) -> bool:
     transcript = "\n".join(
         [
@@ -224,16 +250,22 @@ Your answer will be parsed, so do not include any other text than the classifica
 -----
 
 Classification:"""
+    # GPT-5 models only support temperature=1
+    extra_kwargs = {}
+    if not model.startswith("gpt-5"):
+        extra_kwargs["temperature"] = 0.0
     res = completion(
         model=model,
         custom_llm_provider=provider,
         messages=[{"role": "user", "content": prompt}],
+        extra_body={"service_tier": service_tier} if service_tier else None,
+        **extra_kwargs,
     )
     return "true" in res.choices[0].message.content.lower()
 
 
 def reflect(
-    model: str, provider: str, response: str, messages: List[Dict[str, Any]]
+    model: str, provider: str, response: str, messages: List[Dict[str, Any]], service_tier: str = "default"
 ) -> str:
     transcript = "\n".join(
         [
@@ -258,35 +290,42 @@ Reflection:
 
 Response:
 <the response (this will be parsed and sent to the agent)>"""
+    # GPT-5 models only support temperature=1
+    extra_kwargs = {}
+    if not model.startswith("gpt-5"):
+        extra_kwargs["temperature"] = 0.0
     res = completion(
         model=model,
         custom_llm_provider=provider,
         messages=[{"role": "user", "content": prompt}],
+        extra_body={"service_tier": service_tier} if service_tier else None,
+        **extra_kwargs,
     )
     _, response = res.choices[0].message.content.split("Response:")
     return response.strip()
 
 
 class ReflectionUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str, max_attempts: int = 2) -> None:
+    def __init__(self, model: str, provider: str, max_attempts: int = 2, service_tier: str = "default") -> None:
         self.model = model
         self.provider = provider
+        self.service_tier = service_tier
         self.max_attempts = max_attempts
         self.reset()
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
         cur_messages = messages.copy()
         initial_response = super().generate_next_message(cur_messages)
-        if verify(self.model, self.provider, initial_response, cur_messages):
+        if verify(self.model, self.provider, initial_response, cur_messages, self.service_tier):
             return initial_response
         attempts = 1
         while attempts < self.max_attempts:
             new_message = reflect(
-                self.model, self.provider, initial_response, cur_messages
+                self.model, self.provider, initial_response, cur_messages, self.service_tier
             )
             cur_messages.append({"role": "user", "content": new_message})
             new_response = super().generate_next_message(cur_messages)
-            if verify(self.model, self.provider, new_response, cur_messages):
+            if verify(self.model, self.provider, new_response, cur_messages, self.service_tier):
                 return new_response
             attempts += 1
         return initial_response
@@ -321,6 +360,7 @@ def load_user(
     user_strategy: Union[str, UserStrategy],
     model: Optional[str] = "gpt-4o",
     provider: Optional[str] = None,
+    service_tier: str = "default",
 ) -> BaseUserSimulationEnv:
     if isinstance(user_strategy, str):
         user_strategy = UserStrategy(user_strategy)
@@ -331,23 +371,23 @@ def load_user(
             raise ValueError("LLM user strategy requires a model")
         if provider is None:
             raise ValueError("LLM user strategy requires a model provider")
-        return LLMUserSimulationEnv(model=model, provider=provider)
+        return LLMUserSimulationEnv(model=model, provider=provider, service_tier=service_tier)
     elif user_strategy == UserStrategy.REACT:
         if model is None:
             raise ValueError("React user strategy requires a model")
         if provider is None:
             raise ValueError("React user strategy requires a model provider")
-        return ReactUserSimulationEnv(model=model, provider=provider)
+        return ReactUserSimulationEnv(model=model, provider=provider, service_tier=service_tier)
     elif user_strategy == UserStrategy.VERIFY:
         if model is None:
             raise ValueError("Verify user strategy requires a model")
         if provider is None:
             raise ValueError("Verify user strategy requires a model provider")
-        return VerifyUserSimulationEnv(model=model, provider=provider)
+        return VerifyUserSimulationEnv(model=model, provider=provider, service_tier=service_tier)
     elif user_strategy == UserStrategy.REFLECTION:
         if model is None:
             raise ValueError("Reflection user strategy requires a model")
         if provider is None:
             raise ValueError("Reflection user strategy requires a model provider")
-        return ReflectionUserSimulationEnv(model=model, provider=provider)
+        return ReflectionUserSimulationEnv(model=model, provider=provider, service_tier=service_tier)
     raise ValueError(f"Unknown user strategy {user_strategy}")

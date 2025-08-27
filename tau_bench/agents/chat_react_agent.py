@@ -25,6 +25,7 @@ class ChatReActAgent(Agent):
         use_reasoning: bool = True,
         temperature: float = 0.0,
         request_delay: float = 0.5,
+        service_tier: str = "default",
     ) -> None:
         instruction = REACT_INSTRUCTION if use_reasoning else ACT_INSTRUCTION
         self.prompt = (
@@ -38,15 +39,19 @@ class ChatReActAgent(Agent):
         
         # Create throttled completion function
         self.completion = create_throttled_completion(delay_seconds=request_delay)
+        self.service_tier = service_tier
 
     def generate_next_step(
         self, messages: List[Dict[str, Any]]
     ) -> Tuple[Dict[str, Any], Action, float]:
+        # GPT-5 models only support temperature=1
+        temperature = 1.0 if self.model.startswith("gpt-5") else self.temperature
         res = self.completion(
             model=self.model,
             custom_llm_provider=self.provider,
             messages=messages,
-            temperature=self.temperature,
+            temperature=temperature,
+            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
         )
         message = res.choices[0].message
         action_str = message.content.split("Action:")[-1].strip()

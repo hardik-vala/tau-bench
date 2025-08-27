@@ -38,6 +38,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
         user_model=config.user_model,
         user_provider=config.user_model_provider,
         task_split=config.task_split,
+        service_tier=config.service_tier,
     )
     agent = agent_factory(
         tools_info=env.tools_info,
@@ -70,6 +71,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                 user_model=config.user_model,
                 task_split=config.task_split,
                 user_provider=config.user_model_provider,
+                service_tier=config.service_tier,
                 task_index=idx,
             )
 
@@ -135,6 +137,7 @@ def agent_factory(
             provider=config.model_provider,
             temperature=config.temperature,
             request_delay=config.request_delay,
+            service_tier=config.service_tier,
         )
     elif config.agent_strategy == "act":
         # `act` from https://arxiv.org/abs/2210.03629
@@ -148,6 +151,7 @@ def agent_factory(
             use_reasoning=False,
             temperature=config.temperature,
             request_delay=config.request_delay,
+            service_tier=config.service_tier,
         )
     elif config.agent_strategy == "react":
         # `react` from https://arxiv.org/abs/2210.03629
@@ -161,6 +165,7 @@ def agent_factory(
             use_reasoning=True,
             temperature=config.temperature,
             request_delay=config.request_delay,
+            service_tier=config.service_tier,
         )
     elif config.agent_strategy == "few-shot":
         from tau_bench.agents.few_shot_agent import FewShotToolCallingAgent
@@ -175,6 +180,7 @@ def agent_factory(
             provider=config.model_provider,
             few_shot_displays=few_shot_displays,
             temperature=config.temperature,
+            service_tier=config.service_tier,
         )
     else:
         raise ValueError(f"Unknown agent strategy: {config.agent_strategy}")

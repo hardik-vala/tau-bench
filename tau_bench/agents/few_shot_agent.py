@@ -20,6 +20,7 @@ class FewShotToolCallingAgent(Agent):
         few_shot_displays: List[str],
         temperature: float = 0.0,
         num_few_shots: int = 5,
+        service_tier: str = "default",
     ):
         self.tools_info = tools_info
         self.wiki = wiki
@@ -32,6 +33,7 @@ class FewShotToolCallingAgent(Agent):
         self.few_shot_displays = few_shot_displays
         self.temperature = temperature
         self.num_few_shots = num_few_shots
+        self.service_tier = service_tier
     def solve(
         self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30
     ) -> SolveResult:
@@ -47,12 +49,15 @@ class FewShotToolCallingAgent(Agent):
             {"role": "user", "content": obs},
         ]
         for _ in range(max_num_steps):
+            # GPT-5 models only support temperature=1
+            temperature = 1.0 if self.model.startswith("gpt-5") else self.temperature
             res = completion(
                 messages=messages,
                 model=self.model,
                 custom_llm_provider=self.provider,
                 tools=self.tools_info,
-                temperature=self.temperature,
+                temperature=temperature,
+                extra_body={"service_tier": self.service_tier} if self.service_tier else None,
             )
             next_message = res.choices[0].message.model_dump()
             total_cost += res._hidden_params["response_cost"]

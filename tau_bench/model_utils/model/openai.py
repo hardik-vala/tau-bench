@@ -10,6 +10,8 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-2024-08-06"
 API_KEY_ENV_VAR = "OPENAI_API_KEY"
 
 PRICE_PER_INPUT_TOKEN_MAP = {
+    "gpt-5": 10 / 1000000,
+    "gpt-5-nano": 0.05 / 1000000,
     "gpt-4o-2024-08-06": 2.5 / 1000000,
     "gpt-4o": 5 / 1000000,
     "gpt-4o-2024-08-06": 2.5 / 1000000,
@@ -26,6 +28,8 @@ PRICE_PER_INPUT_TOKEN_MAP = {
 INPUT_PRICE_PER_TOKEN_FALLBACK = 10 / 1000000
 
 CAPABILITY_SCORE_MAP = {
+    "gpt-5": 0.95,
+    "gpt-5-nano": 0.55,
     "gpt-4o-2024-08-06": 0.8,
     "gpt-4o": 0.8,
     "gpt-4o-2024-08-06": 0.8,
@@ -46,6 +50,8 @@ LATENCY_MS_PER_OUTPUT_TOKEN_MAP = {}
 LATENCY_MS_PER_OUTPUT_TOKEN_FALLBACK = 0.0
 
 MAX_CONTEXT_LENGTH_MAP = {
+    "gpt-5": 128000,
+    "gpt-5-nano": 128000,
     "gpt-4o-2024-08-06": 128000,
     "gpt-4o": 128000,
     "gpt-4o-2024-08-06": 128000,

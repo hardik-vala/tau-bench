@@ -95,6 +95,13 @@ def parse_args() -> RunConfig:
         default=0.5,
         help="Delay in seconds between API requests to prevent rate limiting"
     )
+    parser.add_argument(
+        "--service-tier",
+        type=str,
+        choices=["default", "flex"],
+        default="default",
+        help="OpenAI service tier to use when supported (default or flex)",
+    )
     args = parser.parse_args()
     print(args)
     return RunConfig(
@@ -117,6 +124,7 @@ def parse_args() -> RunConfig:
         user_strategy=args.user_strategy,
         few_shot_displays_path=args.few_shot_displays_path,
         request_delay=args.request_delay,
+        service_tier=args.service_tier,
     )
 
 

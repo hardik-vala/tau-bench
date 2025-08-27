@@ -19,6 +19,7 @@ class ToolCallingAgent(Agent):
         provider: str,
         temperature: float = 0.0,
         request_delay: float = 0.5,
+        service_tier: str = "default",
     ):
         self.tools_info = tools_info
         self.wiki = wiki
@@ -28,6 +29,7 @@ class ToolCallingAgent(Agent):
         
         # Create throttled completion function
         self.completion = create_throttled_completion(delay_seconds=request_delay)
+        self.service_tier = service_tier
 
     def solve(
         self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30
@@ -42,12 +44,15 @@ class ToolCallingAgent(Agent):
             {"role": "user", "content": obs},
         ]
         for _ in range(max_num_steps):
+            # GPT-5 models only support temperature=1
+            temperature = 1.0 if self.model.startswith("gpt-5") else self.temperature
             res = self.completion(
                 messages=messages,
                 model=self.model,
                 custom_llm_provider=self.provider,
                 tools=self.tools_info,
-                temperature=self.temperature,
+                temperature=temperature,
+                extra_body={"service_tier": self.service_tier} if self.service_tier else None,
             )
             next_message = res.choices[0].message.model_dump()
             total_cost += res._hidden_params["response_cost"]

@@ -11,6 +11,7 @@ def get_env(
     user_model: str,
     task_split: str,
     user_provider: Optional[str] = None,
+    service_tier: str = "default",
     task_index: Optional[int] = None,
 ) -> Env:
     if env_name == "retail":
@@ -21,6 +22,7 @@ def get_env(
             user_model=user_model,
             task_split=task_split,
             user_provider=user_provider,
+            service_tier=service_tier,
             task_index=task_index,
         )
     elif env_name == "airline":
@@ -31,6 +33,7 @@ def get_env(
             user_model=user_model,
             task_split=task_split,
             user_provider=user_provider,
+            service_tier=service_tier,
             task_index=task_index,
         )
     else:

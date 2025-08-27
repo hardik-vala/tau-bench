@@ -90,3 +90,5 @@ class RunConfig(BaseModel):
     few_shot_displays_path: Optional[str] = None
     # Request throttling
     request_delay: float = 0.5
+    # OpenAI service tier (e.g., default, flex)
+    service_tier: str = "default"
