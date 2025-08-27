@@ -91,6 +91,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     info=res.info,
                     traj=res.messages,
                     trial=i,
+                    total_cost=res.total_cost,
                 )
             except Exception as e:
                 result = EnvRunResult(

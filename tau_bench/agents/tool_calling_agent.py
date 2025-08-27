@@ -87,6 +87,7 @@ class ToolCallingAgent(Agent):
             info=info,
             messages=messages,
             total_cost=total_cost,
+            total_user_cost=env.user.get_total_cost(),
         )
 
 
