@@ -148,3 +148,8 @@ def add_md_close_tag(prompt: str) -> str:
 
 def add_md_tag(prompt: str) -> str:
     return f"```json\n{prompt}\n```"
+
+
+def is_openai_provider(provider: str) -> bool:
+    """Check if the provider supports OpenAI-specific parameters like service_tier."""
+    return provider.lower() in ["openai", "azure_openai", "azure"]

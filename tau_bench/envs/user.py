@@ -5,6 +5,7 @@ import enum
 from litellm import completion
 
 from typing import Optional, List, Dict, Any, Union
+from tau_bench.model_utils.model.utils import is_openai_provider
 
 
 class BaseUserSimulationEnv(abc.ABC):
@@ -49,11 +50,15 @@ class LLMUserSimulationEnv(BaseUserSimulationEnv):
         extra_kwargs = {}
         if not self.model.startswith("gpt-5"):
             extra_kwargs["temperature"] = 0.0
+        
+        # Only include OpenAI-specific parameters for OpenAI providers
+        if is_openai_provider(self.provider) and self.service_tier:
+            extra_kwargs["extra_body"] = {"service_tier": self.service_tier}
+        
         res = completion(
             model=self.model,
             custom_llm_provider=self.provider,
             messages=messages,
-            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
             **extra_kwargs,
         )
         message = res.choices[0].message
@@ -128,16 +133,20 @@ User Response:
         extra_kwargs = {}
         if not self.model.startswith("gpt-5"):
             extra_kwargs["temperature"] = 0.0
+        
+        # Only include OpenAI-specific parameters for OpenAI providers
+        if is_openai_provider(self.provider) and self.service_tier:
+            extra_kwargs["extra_body"] = {"service_tier": self.service_tier}
+        
         res = completion(
             model=self.model,
             custom_llm_provider=self.provider,
             messages=messages,
-            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
             **extra_kwargs,
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
-        self.total_cost = res._hidden_params["response_cost"]
+        self.total_cost += res._hidden_params["response_cost"]
         return self.parse_response(message.content)
 
     def reset(self, instruction: Optional[str] = None) -> str:
@@ -186,15 +195,19 @@ class VerifyUserSimulationEnv(LLMUserSimulationEnv):
             extra_kwargs = {}
             if not self.model.startswith("gpt-5"):
                 extra_kwargs["temperature"] = 0.0
+            
+            # Only include OpenAI-specific parameters for OpenAI providers
+            if is_openai_provider(self.provider) and self.service_tier:
+                extra_kwargs["extra_body"] = {"service_tier": self.service_tier}
+            
             res = completion(
                 model=self.model,
                 custom_llm_provider=self.provider,
                 messages=messages,
-                extra_body={"service_tier": self.service_tier} if self.service_tier else None,
                 **extra_kwargs,
             )
             cur_message = res.choices[0].message
-            self.total_cost = res._hidden_params["response_cost"]
+            self.total_cost += res._hidden_params["response_cost"]
             if verify(self.model, self.provider, cur_message, messages):
                 self.messages.append(cur_message.model_dump())
                 return cur_message.content
@@ -254,11 +267,15 @@ Classification:"""
     extra_kwargs = {}
     if not model.startswith("gpt-5"):
         extra_kwargs["temperature"] = 0.0
+    
+    # Only include OpenAI-specific parameters for OpenAI providers
+    if is_openai_provider(provider) and service_tier:
+        extra_kwargs["extra_body"] = {"service_tier": service_tier}
+    
     res = completion(
         model=model,
         custom_llm_provider=provider,
         messages=[{"role": "user", "content": prompt}],
-        extra_body={"service_tier": service_tier} if service_tier else None,
         **extra_kwargs,
     )
     return "true" in res.choices[0].message.content.lower()
@@ -294,11 +311,15 @@ Response:
     extra_kwargs = {}
     if not model.startswith("gpt-5"):
         extra_kwargs["temperature"] = 0.0
+    
+    # Only include OpenAI-specific parameters for OpenAI providers
+    if is_openai_provider(provider) and service_tier:
+        extra_kwargs["extra_body"] = {"service_tier": service_tier}
+    
     res = completion(
         model=model,
         custom_llm_provider=provider,
         messages=[{"role": "user", "content": prompt}],
-        extra_body={"service_tier": service_tier} if service_tier else None,
         **extra_kwargs,
     )
     _, response = res.choices[0].message.content.split("Response:")

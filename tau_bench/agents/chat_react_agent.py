@@ -12,6 +12,7 @@ from tau_bench.types import (
     RESPOND_ACTION_FIELD_NAME,
 )
 from tau_bench.utils.throttle import create_throttled_completion
+from tau_bench.model_utils.model.utils import is_openai_provider
 from typing import Optional, List, Dict, Any, Tuple
 
 
@@ -46,12 +47,17 @@ class ChatReActAgent(Agent):
     ) -> Tuple[Dict[str, Any], Action, float]:
         # GPT-5 models only support temperature=1
         temperature = 1.0 if self.model.startswith("gpt-5") else self.temperature
+        # Only include OpenAI-specific parameters for OpenAI providers
+        extra_kwargs = {}
+        if is_openai_provider(self.provider) and self.service_tier:
+            extra_kwargs["extra_body"] = {"service_tier": self.service_tier}
+        
         res = self.completion(
             model=self.model,
             custom_llm_provider=self.provider,
             messages=messages,
             temperature=temperature,
-            extra_body={"service_tier": self.service_tier} if self.service_tier else None,
+            **extra_kwargs,
         )
         message = res.choices[0].message
         action_str = message.content.split("Action:")[-1].strip()

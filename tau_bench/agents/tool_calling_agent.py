@@ -8,6 +8,7 @@ from tau_bench.agents.base import Agent
 from tau_bench.envs.base import Env
 from tau_bench.types import SolveResult, Action, RESPOND_ACTION_NAME
 from tau_bench.utils.throttle import create_throttled_completion
+from tau_bench.model_utils.model.utils import is_openai_provider
 
 
 class ToolCallingAgent(Agent):
@@ -46,13 +47,18 @@ class ToolCallingAgent(Agent):
         for _ in range(max_num_steps):
             # GPT-5 models only support temperature=1
             temperature = 1.0 if self.model.startswith("gpt-5") else self.temperature
+            # Only include OpenAI-specific parameters for OpenAI providers
+            extra_kwargs = {}
+            if is_openai_provider(self.provider) and self.service_tier:
+                extra_kwargs["extra_body"] = {"service_tier": self.service_tier}
+            
             res = self.completion(
                 messages=messages,
                 model=self.model,
                 custom_llm_provider=self.provider,
                 tools=self.tools_info,
                 temperature=temperature,
-                extra_body={"service_tier": self.service_tier} if self.service_tier else None,
+                **extra_kwargs,
             )
             next_message = res.choices[0].message.model_dump()
             total_cost += res._hidden_params["response_cost"]
