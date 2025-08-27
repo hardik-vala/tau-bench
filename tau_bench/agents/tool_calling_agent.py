@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any
 from tau_bench.agents.base import Agent
 from tau_bench.envs.base import Env
 from tau_bench.types import SolveResult, Action, RESPOND_ACTION_NAME
+from tau_bench.utils.throttle import create_throttled_completion
 
 
 class ToolCallingAgent(Agent):
@@ -17,12 +18,16 @@ class ToolCallingAgent(Agent):
         model: str,
         provider: str,
         temperature: float = 0.0,
+        request_delay: float = 0.5,
     ):
         self.tools_info = tools_info
         self.wiki = wiki
         self.model = model
         self.provider = provider
         self.temperature = temperature
+        
+        # Create throttled completion function
+        self.completion = create_throttled_completion(delay_seconds=request_delay)
 
     def solve(
         self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30
@@ -37,7 +42,7 @@ class ToolCallingAgent(Agent):
             {"role": "user", "content": obs},
         ]
         for _ in range(max_num_steps):
-            res = completion(
+            res = self.completion(
                 messages=messages,
                 model=self.model,
                 custom_llm_provider=self.provider,

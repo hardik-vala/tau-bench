@@ -11,6 +11,7 @@ from tau_bench.types import (
     RESPOND_ACTION_NAME,
     RESPOND_ACTION_FIELD_NAME,
 )
+from tau_bench.utils.throttle import create_throttled_completion
 from typing import Optional, List, Dict, Any, Tuple
 
 
@@ -23,6 +24,7 @@ class ChatReActAgent(Agent):
         provider: str,
         use_reasoning: bool = True,
         temperature: float = 0.0,
+        request_delay: float = 0.5,
     ) -> None:
         instruction = REACT_INSTRUCTION if use_reasoning else ACT_INSTRUCTION
         self.prompt = (
@@ -33,11 +35,14 @@ class ChatReActAgent(Agent):
         self.temperature = temperature
         self.use_reasoning = use_reasoning
         self.tools_info = tools_info
+        
+        # Create throttled completion function
+        self.completion = create_throttled_completion(delay_seconds=request_delay)
 
     def generate_next_step(
         self, messages: List[Dict[str, Any]]
     ) -> Tuple[Dict[str, Any], Action, float]:
-        res = completion(
+        res = self.completion(
             model=self.model,
             custom_llm_provider=self.provider,
             messages=messages,
