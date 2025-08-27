@@ -25,10 +25,10 @@ class BaseUserSimulationEnv(abc.ABC):
 
 class HumanUserSimulationEnv(BaseUserSimulationEnv):
     def reset(self, instruction: str) -> str:
-        return input(f"{instruction}\n")
+        return input(f"\nINSTRUCTION: {instruction}\n\nUSER: ")
 
     def step(self, content: str) -> str:
-        return input(f"{content}\n")
+        return input(f"\nAGENT:{content}\n\nUSER: ")
 
     def get_total_cost(self) -> float:
         return 0
