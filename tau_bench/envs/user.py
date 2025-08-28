@@ -49,7 +49,7 @@ class LLMUserSimulationEnv(BaseUserSimulationEnv):
         # GPT-5 models only support temperature=1
         extra_kwargs = {}
         if not self.model.startswith("gpt-5"):
-            extra_kwargs["temperature"] = 0.0
+            extra_kwargs["temperature"] = 0.8
         
         # Only include OpenAI-specific parameters for OpenAI providers
         if is_openai_provider(self.provider) and self.service_tier:
